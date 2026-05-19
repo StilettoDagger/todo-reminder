@@ -1,0 +1,4 @@
+discord.py
+pytest
+pytest-asyncio
+python-dotenv
