@@ -12,29 +12,25 @@ class SetupCog(commands.Cog):
     @app_commands.describe(
         channel="The channel to track todos in",
         reminder_time="Hours before a reminder is sent (default: 24)",
-        reminder_message="Template for the reminder message",
-        completion_reaction="Emoji used to mark a todo as complete (default: ✅)"
+        reminder_message="Template for the reminder message"
     )
     async def setup(
         self, 
         interaction: discord.Interaction, 
         channel: discord.TextChannel,
         reminder_time: int = 24,
-        reminder_message: str = "{user} hasn't updated their todo in {reminder_time} hours: {message_link}",
-        completion_reaction: str = "✅"
+        reminder_message: str = "{user} hasn't updated their todo in {reminder_time} hours: {message_link}"
     ):
         set_channel_settings(
             self.bot.db_conn,
             channel.id,
             reminder_time,
-            reminder_message,
-            completion_reaction
+            reminder_message
         )
         await interaction.response.send_message(
             f"✅ Setup complete for {channel.mention}!\n"
             f"**Reminder Time**: {reminder_time} hours\n"
-            f"**Reminder Message**: `{reminder_message}`\n"
-            f"**Completion Reaction**: {completion_reaction}",
+            f"**Reminder Message**: `{reminder_message}`",
             ephemeral=True
         )
 
@@ -66,12 +62,6 @@ class SetupCog(commands.Cog):
         set_channel_settings(self.bot.db_conn, channel.id, reminder_message=message)
         await interaction.response.send_message(f"✅ Reminder message for {channel.mention} set to:\n`{message}`", ephemeral=True)
 
-    @app_commands.command(name="set_completion_reaction", description="Set the completion reaction for a channel")
-    @app_commands.default_permissions(manage_channels=True)
-    async def set_completion_reaction(self, interaction: discord.Interaction, channel: discord.TextChannel, reaction: str):
-        set_channel_settings(self.bot.db_conn, channel.id, completion_reaction=reaction)
-        await interaction.response.send_message(f"✅ Completion reaction for {channel.mention} set to: {reaction}", ephemeral=True)
-
     @app_commands.command(name="help", description="Display the help message for Todo Reminder Bot")
     async def help_cmd(self, interaction: discord.Interaction):
         help_text = (
@@ -82,14 +72,13 @@ class SetupCog(commands.Cog):
             "`/set_channel` - Designate a channel for todos.\n"
             "`/clear_channel` - Stop tracking a channel.\n"
             "`/set_reminder_time` - Set how many hours before a reminder is sent.\n"
-            "`/set_reminder_message` - Set the text of the reminder.\n"
-            "`/set_completion_reaction` - Set the emoji used to complete a todo.\n\n"
+            "`/set_reminder_message` - Set the text of the reminder.\n\n"
             "**How to use:**\n"
             "1. Setup a channel using `/setup`.\n"
             "2. Users post a todo message in that channel.\n"
             "3. The bot will silently track the message in the background.\n"
-            "4. If the original message isn't updated (edited) or marked as complete before the reminder time elapses, a thread is created and a reminder is sent.\n"
-            "5. To complete a todo, react to the original message with the completion emoji (default ✅).\n\n"
+            "4. If the original message isn't updated (edited) before the reminder time elapses, a thread is created and a reminder is sent.\n"
+            "5. To stop reminders for a todo, edit the original message.\n\n"
             "**Message Template Placeholders:**\n"
             "When setting a custom reminder message, use these placeholders:\n"
             "`{user}` - Pings the original poster.\n"

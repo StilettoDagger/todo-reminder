@@ -6,7 +6,7 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-def set_channel_settings(conn, channel_id, reminder_time=None, reminder_message=None, completion_reaction=None):
+def set_channel_settings(conn, channel_id, reminder_time=None, reminder_message=None):
     conn.row_factory = dict_factory
     cursor = conn.cursor()
     
@@ -25,9 +25,6 @@ def set_channel_settings(conn, channel_id, reminder_time=None, reminder_message=
         if reminder_message is not None:
             updates.append("reminder_message = ?")
             params.append(reminder_message)
-        if completion_reaction is not None:
-            updates.append("completion_reaction = ?")
-            params.append(completion_reaction)
             
         if updates:
             query += ", ".join(updates) + " WHERE channel_id = ?"
@@ -37,11 +34,10 @@ def set_channel_settings(conn, channel_id, reminder_time=None, reminder_message=
         # Defaults
         rt = reminder_time if reminder_time is not None else 24
         rm = reminder_message if reminder_message is not None else "{user} hasn't updated their todo in {reminder_time} hours: {message_link}"
-        cr = completion_reaction if completion_reaction is not None else "✅"
         
         cursor.execute(
-            "INSERT INTO channel_settings (channel_id, reminder_time, reminder_message, completion_reaction) VALUES (?, ?, ?, ?)",
-            (channel_id, rt, rm, cr)
+            "INSERT INTO channel_settings (channel_id, reminder_time, reminder_message) VALUES (?, ?, ?)",
+            (channel_id, rt, rm)
         )
     
     conn.commit()

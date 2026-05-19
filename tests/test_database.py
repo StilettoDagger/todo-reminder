@@ -20,19 +20,17 @@ def db_connection():
 
 def test_channel_settings(db_connection):
     # Test setting and getting
-    set_channel_settings(db_connection, channel_id=123, reminder_time=12, reminder_message="Hello {user}", completion_reaction="👍")
+    set_channel_settings(db_connection, channel_id=123, reminder_time=12, reminder_message="Hello {user}")
     settings = get_channel_settings(db_connection, channel_id=123)
     assert settings is not None
     assert settings["reminder_time"] == 12
     assert settings["reminder_message"] == "Hello {user}"
-    assert settings["completion_reaction"] == "👍"
 
     # Test updating existing
-    set_channel_settings(db_connection, channel_id=123, reminder_time=24, reminder_message="Update {user}", completion_reaction="✅")
+    set_channel_settings(db_connection, channel_id=123, reminder_time=24, reminder_message="Update {user}")
     settings = get_channel_settings(db_connection, channel_id=123)
     assert settings["reminder_time"] == 24
     assert settings["reminder_message"] == "Update {user}"
-    assert settings["completion_reaction"] == "✅"
 
 def test_todos(db_connection):
     now = datetime.datetime.now()

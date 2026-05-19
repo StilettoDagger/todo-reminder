@@ -5,8 +5,7 @@ from src.database.queries import (
     get_channel_settings,
     add_todo,
     get_todo_by_message_id,
-    delete_todo,
-    update_todo_timestamp
+    delete_todo
 )
 
 class TodoCog(commands.Cog):
@@ -45,34 +44,19 @@ class TodoCog(commands.Cog):
 
         todo = get_todo_by_message_id(self.bot.db_conn, after.id)
         if todo:
-            update_todo_timestamp(self.bot.db_conn, after.id, datetime.datetime.now())
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if payload.user_id == self.bot.user.id:
-            return
-
-        todo = get_todo_by_message_id(self.bot.db_conn, payload.message_id)
-        if not todo:
-            return
-
-        settings = get_channel_settings(self.bot.db_conn, todo["channel_id"])
-        if not settings:
-            return
-
-        # Check if reaction matches completion reaction
-        if str(payload.emoji) == settings["completion_reaction"]:
-            # Delete todo
-            delete_todo(self.bot.db_conn, payload.message_id)
+            delete_todo(self.bot.db_conn, after.id)
             
-            # Optionally send a message in the thread
+            try:
+                await after.add_reaction("⭐")
+            except (discord.Forbidden, discord.HTTPException):
+                pass
+            
             channel = self.bot.get_channel(todo["channel_id"])
             if channel:
                 # Get the thread (thread ID is usually the message ID)
-                thread = channel.get_thread(payload.message_id)
+                thread = channel.get_thread(after.id)
                 if thread:
-                    await thread.send("🎉 This todo has been marked as completed! Reminders stopped.")
-                    # Optionally archive the thread
+                    # Archive the thread since reminders are stopped
                     await thread.edit(archived=True)
 
     @commands.Cog.listener()
