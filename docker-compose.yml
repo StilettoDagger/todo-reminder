@@ -1,5 +1,6 @@
 services:
   bot:
+    image: todo-reminder:latest
     build: .
     container_name: todo-reminder-bot
     restart: unless-stopped
