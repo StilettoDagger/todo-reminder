@@ -44,7 +44,8 @@ class ReminderCog(commands.Cog):
                     # Thread doesn't exist, we need to create it.
                     try:
                         original_msg = await channel.fetch_message(message_id)
-                        thread_name = f"Todo: {original_msg.content[:20]}..." if len(original_msg.content) > 20 else f"Todo: {original_msg.content}"
+                        base_name = f"{original_msg.content[:20]}..." if len(original_msg.content) > 20 else original_msg.content
+                        thread_name = f"Reminder: {base_name}"
                         thread = await original_msg.create_thread(name=thread_name, auto_archive_duration=10080)
                     except discord.NotFound:
                         # Original message deleted, so we should untrack it

@@ -42,6 +42,9 @@ class TodoCog(commands.Cog):
         if after.author.bot:
             return
 
+        if before.content == after.content:
+            return
+
         todo = get_todo_by_message_id(self.bot.db_conn, after.id)
         if todo:
             delete_todo(self.bot.db_conn, after.id)
