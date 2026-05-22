@@ -38,29 +38,53 @@ class TodoCog(commands.Cog):
             print(f"Failed to track todo: {e}")
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if after.author.bot:
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        # We only care if the message is a tracked todo
+        todo = get_todo_by_message_id(self.bot.db_conn, payload.message_id)
+        if not todo:
             return
 
-        if before.content == after.content:
+        # "content" key being present usually means the content was actually edited.
+        # If it's missing, the edit was likely just an embed update or pin event.
+        if "content" not in payload.data:
             return
 
-        todo = get_todo_by_message_id(self.bot.db_conn, after.id)
-        if todo:
-            delete_todo(self.bot.db_conn, after.id)
-            
+        # Get or fetch the channel
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
             try:
-                await after.add_reaction("⭐")
-            except (discord.Forbidden, discord.HTTPException):
-                pass
-            
-            channel = self.bot.get_channel(todo["channel_id"])
-            if channel:
-                # Get the thread (thread ID is usually the message ID)
-                thread = channel.get_thread(after.id)
-                if thread:
-                    # Archive the thread since reminders are stopped
+                channel = await self.bot.fetch_channel(payload.channel_id)
+            except discord.HTTPException:
+                return
+
+        # Fetch the updated message
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except discord.HTTPException:
+            return
+
+        if message.author.bot:
+            return
+
+        # If the message was cached, double check the content actually changed
+        if payload.cached_message and payload.cached_message.content == message.content:
+            return
+
+        delete_todo(self.bot.db_conn, payload.message_id)
+        
+        try:
+            await message.add_reaction("⭐")
+        except (discord.Forbidden, discord.HTTPException):
+            pass
+        
+        # Archive the thread if possible
+        if hasattr(channel, 'get_thread'):
+            thread = channel.get_thread(payload.message_id)
+            if thread:
+                try:
                     await thread.edit(archived=True)
+                except discord.HTTPException:
+                    pass
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
