@@ -5,7 +5,8 @@ from src.database.queries import (
     get_overdue_todos,
     get_channel_settings,
     update_todo_timestamp,
-    delete_todo
+    delete_todo,
+    get_updated_todos
 )
 
 class ReminderCog(commands.Cog):
@@ -20,6 +21,13 @@ class ReminderCog(commands.Cog):
     async def reminder_loop(self):
         await self.bot.wait_until_ready()
         
+        # First, clear any todos that have been updated (i.e. updated_at != created_at)
+        updated_todos = get_updated_todos(self.bot.db_conn)
+        for todo in updated_todos:
+            channel_id = todo["channel_id"]
+            message_id = todo["message_id"]
+            delete_todo(self.bot.db_conn, message_id)
+
         overdue_todos = get_overdue_todos(self.bot.db_conn)
         for todo in overdue_todos:
             channel_id = todo["channel_id"]

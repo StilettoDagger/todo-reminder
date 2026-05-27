@@ -102,3 +102,9 @@ def update_todo_timestamp(conn, message_id, updated_at):
     updated_at_str = updated_at.isoformat() if isinstance(updated_at, datetime.datetime) else updated_at
     cursor.execute("UPDATE todos SET updated_at = ? WHERE message_id = ?", (updated_at_str, message_id))
     conn.commit()
+
+def get_updated_todos(conn):
+    conn.row_factory = dict_factory
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM todos WHERE updated_at != created_at")
+    return cursor.fetchall()
