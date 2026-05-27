@@ -44,9 +44,9 @@ class TodoCog(commands.Cog):
         if not todo:
             return
 
-        # "content" key being present usually means the content was actually edited.
-        # If it's missing, the edit was likely just an embed update or pin event.
-        if "content" not in payload.data:
+        # Check if this was a user edit (has edited_timestamp) rather than an automatic embed update
+        # If the bot lacks the Message Content intent, 'content' won't be present, but 'edited_timestamp' will be.
+        if "edited_timestamp" not in payload.data and "content" not in payload.data:
             return
 
         # Get or fetch the channel
@@ -66,23 +66,26 @@ class TodoCog(commands.Cog):
         if message.author.bot:
             return
 
-        # If the message was cached, double check the content actually changed
-        if payload.cached_message and payload.cached_message.content == message.content:
-            return
+        # If the message was cached, double check the edit time or content changed
+        if payload.cached_message:
+            # If both the edit timestamp and content are the same, it wasn't a real user edit
+            if payload.cached_message.edited_at == message.edited_at and payload.cached_message.content == message.content:
+                return
 
+        # Delete the todo to mark it as completed
         delete_todo(self.bot.db_conn, payload.message_id)
-        
+
         try:
             await message.add_reaction("⭐")
         except (discord.Forbidden, discord.HTTPException):
             pass
-        
+
         # Archive the thread if possible
         if hasattr(channel, 'get_thread'):
             thread = channel.get_thread(payload.message_id)
             if thread:
                 try:
-                    await thread.edit(archived=True)
+                    await thread.edit(archived=True, reason="Todo completed")
                 except discord.HTTPException:
                     pass
 
